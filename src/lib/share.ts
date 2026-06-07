@@ -11,7 +11,9 @@ export function buildShareUrl(params: {
   lat?: number | null;
   lng?: number | null;
 }): string {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const base =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
   const url = new URL("/search", base);
 
   if (params.query) url.searchParams.set("query", params.query);
