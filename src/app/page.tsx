@@ -1,100 +1,178 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Navbar from "@/components/ui/Navbar";
+import { SPECIALTIES } from "@/lib/schema";
+
+export default function HomePage() {
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+  const [locating, setLocating] = useState(false);
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+
+  // Request geolocation on mount
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        });
+        setLocating(false);
+      },
+      () => {
+        setLocationError(
+          "Location access denied — you can still search by name or city.",
+        );
+        setLocating(false);
+      },
+    );
+  }, []);
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (query.trim()) params.set("query", query.trim());
+    if (userLocation) {
+      params.set("lat", String(userLocation.lat));
+      params.set("lng", String(userLocation.lng));
+      params.set("radius", "20");
+    }
+    router.push(`/search?${params.toString()}`);
+  }
+
+  function handleSpecialtyClick(specialty: string) {
+    router.push(`/search?specialties=${specialty}`);
+  }
+
+  function handleNearMe() {
+    if (!userLocation) return;
+    router.push(
+      `/search?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=10`,
+    );
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="min-h-screen bg-white">
+      <Navbar />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      {/* Hero */}
+      <section className="bg-gradient-to-br from-green-600 to-green-800 text-white py-20 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl sm:text-5xl font-bold mb-4 leading-tight">
+            Find the Right Hospital,{" "}
+            <span className="text-green-200">Right Now</span>
+          </h1>
+          <p className="text-green-100 text-lg mb-10 max-w-2xl mx-auto">
+            Nigeria&apos;s most complete hospital directory. Search by name,
+            city, LGA, or specialty — then export or share results instantly.
+          </p>
+
+          {/* Search form */}
+          <form
+            onSubmit={handleSearch}
+            className="bg-white rounded-2xl p-2 flex gap-2 max-w-2xl mx-auto shadow-lg"
           >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by hospital name, city, or LGA..."
+              className="flex-1 px-4 py-3 text-gray-900 placeholder-gray-400 text-sm outline-none rounded-xl"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <button
+              type="submit"
+              className="bg-green-600 text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-green-700 transition-colors whitespace-nowrap"
+            >
+              Search
+            </button>
+          </form>
+
+          {/* Location status */}
+          <div className="mt-4 h-6">
+            {locating && (
+              <p className="text-green-200 text-sm">
+                📍 Detecting your location...
+              </p>
+            )}
+            {userLocation && !locating && (
+              <button
+                onClick={handleNearMe}
+                className="text-green-200 text-sm underline hover:text-white transition-colors"
+              >
+                📍 Use my location — find hospitals within 10 km
+              </button>
+            )}
+            {locationError && (
+              <p className="text-green-300 text-sm">{locationError}</p>
+            )}
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      </section>
+
+      {/* Quick specialty filters */}
+      <section className="py-12 px-4 bg-gray-50">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
+            Browse by Specialty
+          </h2>
+          <div className="flex flex-wrap gap-3 justify-center">
+            {SPECIALTIES.map((specialty) => (
+              <button
+                key={specialty}
+                onClick={() => handleSpecialtyClick(specialty)}
+                className="px-4 py-2 bg-white border border-gray-200 rounded-full text-sm text-gray-700 hover:border-green-500 hover:text-green-700 hover:bg-green-50 transition-all capitalize shadow-sm"
+              >
+                {specialty}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Feature highlights */}
+      <section className="py-16 px-4">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
+          {[
+            {
+              icon: "🗺️",
+              title: "Interactive Map",
+              desc: "See hospitals plotted on a live Mapbox map with radius filtering.",
+            },
+            {
+              icon: "📤",
+              title: "Export & Share",
+              desc: "Download results as CSV or share a direct link with anyone.",
+            },
+            {
+              icon: "⭐",
+              title: "Verified Ratings",
+              desc: "Real ratings and reviews from patients across Nigeria.",
+            },
+          ].map((f) => (
+            <div
+              key={f.title}
+              className="p-6 bg-white rounded-2xl border border-gray-100 shadow-sm"
+            >
+              <div className="text-4xl mb-3">{f.icon}</div>
+              <h3 className="font-semibold text-gray-900 mb-2">{f.title}</h3>
+              <p className="text-gray-500 text-sm">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-100 py-8 text-center text-sm text-gray-400">
+        <p>© 2026 Carefinder — Nigeria&apos;s Civic Hospital Directory</p>
       </footer>
     </div>
   );

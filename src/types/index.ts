@@ -15,6 +15,7 @@ export interface Hospital {
   review_count: number;
   created_by?: string | null;
   created_at: string;
+  updated_at?: string;
   distance_km?: number | null;
 }
 
@@ -26,6 +27,7 @@ export interface Review {
   text?: string | null;
   status: "pending" | "approved" | "hidden";
   created_at: string;
+  updated_at?: string;
 }
 
 export interface HospitalImage {
@@ -36,8 +38,23 @@ export interface HospitalImage {
   created_at: string;
 }
 
+export interface AppUser {
+  id: string;
+  email: string;
+  role: "admin" | "user";
+  created_at: string;
+}
+
 export type FilterState = {
   specialties: string[];
   ownership: "public" | "private" | null;
   radius: number | null;
+};
+
+export type PaginatedResult<T> = {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
 };
